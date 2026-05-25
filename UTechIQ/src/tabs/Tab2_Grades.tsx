@@ -31,7 +31,6 @@ export default function Tab2_Grades({ profile }: Tab2Props) {
       if (error) throw error;
       setEnrollments(data || []);
 
-      // Probation Pipeline Evaluation Hook
       if (profile.role === 'student' && data && data.length > 0) {
         const structuralGpa = data[0].cumulative_gpa_snapshot || 4.0;
         
@@ -57,7 +56,6 @@ export default function Tab2_Grades({ profile }: Tab2Props) {
   return (
     <div className="space-y-6">
       
-      {/* Early Warning Dashboard Header Element */}
       {probationAlert && (
         <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl flex items-start gap-4 shadow-sm group relative">
           <div className="p-2 bg-amber-500 text-slate-950 rounded-xl shrink-0"><ShieldAlert size={18} className="stroke-[2.5px]" /></div>
@@ -66,7 +64,6 @@ export default function Tab2_Grades({ profile }: Tab2Props) {
             <p className="text-xs text-slate-600 mt-1">Mathematical projections detect performance trajectory metrics descending near boundary thresholds under UTech Rule 3.</p>
           </div>
           
-          {/* shadcn/ui Hover Card / Tooltip Alternative Wrapper Context implementation */}
           <div className="absolute hidden group-hover:block bottom-full left-4 bg-slate-950 text-slate-200 border border-slate-800 p-4 rounded-xl shadow-2xl max-w-sm z-50 mb-2 font-sans">
             <p className="text-[11px] leading-relaxed">
               "Academic Probation is triggered under UTech Regulation 3 when a student's Cumulative GPA falls below 2.0. While on probation, credit limits are tightly restricted to assist with academic recovery."
@@ -75,7 +72,6 @@ export default function Tab2_Grades({ profile }: Tab2Props) {
         </div>
       )}
 
-      {/* Conditional Interface Controller View Routing Logic */}
       {profile.role === 'student' ? (
         <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs">
           <div className="border-b border-slate-100 pb-4 mb-4"><h3 className="text-xs font-black uppercase text-slate-800 tracking-wider">Personal Academic Statement</h3></div>

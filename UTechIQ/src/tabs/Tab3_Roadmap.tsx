@@ -33,7 +33,6 @@ export default function Tab3_Curriculum() {
     return <div className="text-xs uppercase font-mono tracking-widest text-slate-400 p-8 animate-pulse">Evaluating milestone prerequisites tracks...</div>;
   }
 
-  // Segment structural modules tracking arrays based on categorical status records fields
   const completed = records.filter(r => r.status === 'completed');
   const active = records.filter(r => r.status === 'current');
   const remaining = records.filter(r => r.status === 'remaining');
@@ -50,7 +49,6 @@ export default function Tab3_Curriculum() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
-        {/* State Node 1: Completed Blocks */}
         <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-xs">
           <div className="flex items-center justify-between border-b border-slate-100 pb-2">
             <span className="text-[11px] font-black uppercase text-emerald-600 tracking-widest font-mono">1. Completed Units</span>
@@ -69,7 +67,6 @@ export default function Tab3_Curriculum() {
           </div>
         </div>
 
-        {/* State Node 2: In-Progress Units */}
         <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-xs">
           <div className="flex items-center justify-between border-b border-slate-100 pb-2">
             <span className="text-[11px] font-black uppercase text-amber-500 tracking-widest font-mono">2. Active Term</span>
@@ -91,7 +88,6 @@ export default function Tab3_Curriculum() {
           </div>
         </div>
 
-        {/* State Node 3: Remaining Requirement Units */}
         <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-xs">
           <div className="flex items-center justify-between border-b border-slate-100 pb-2">
             <span className="text-[11px] font-black uppercase text-slate-400 tracking-widest font-mono">3. Outstanding track</span>

@@ -1,4 +1,3 @@
-// Explicitly extract the role type so components can import it cleanly
 export type UserRole = 'student' | 'professor';
 
 export interface UserProfile {
@@ -6,10 +5,9 @@ export interface UserProfile {
   name: string;
   role: UserRole;
   id_number: string;
-  created_at?: string;
+  created_at: string; 
 }
 
-// Keeping a Profile alias just in case other modules look for it
 export type Profile = UserProfile;
 
 export interface Module {

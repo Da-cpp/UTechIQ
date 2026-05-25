@@ -7,7 +7,9 @@ import Tab3_Curriculum from './tabs/Tab3_Roadmap';
 
 import Login from './routes/Login';
 
-import { MessageSquare, GraduationCap, Map, LogOut, Loader2, Landmark } from 'lucide-react';
+import { MessageSquare, GraduationCap, Map, LogOut, Loader2, Landmark, Radio } from 'lucide-react';
+
+
 
 export default function App() {
   const [session, setSession] = useState<any>(null);
@@ -33,7 +35,7 @@ export default function App() {
     });
 
     return () => subscription.unsubscribe();
-  }, []); // ✓ Empty dependency array ensures authentication setups only execute once
+  }, []);
 
   const fetchUserProfile = async (userId: string) => {
     try {
@@ -65,12 +67,11 @@ export default function App() {
     await supabase.auth.signOut();
   };
 
-  // ✓ Early returns keep the rendering tree simple and clean, avoiding tree mismatches
   if (appLoading) {
     return (
-      <div className="h-screen w-screen bg-slate-900 flex flex-col items-center justify-center gap-3">
-        <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
-        <span className="text-xs font-semibold tracking-widest uppercase text-slate-500 font-mono">
+      <div style={{ height: '100vh', width: '100vw', backgroundColor: '#020617', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
+        <Loader2 size={32} className="animate-spin" style={{ color: '#eab308' }} />
+        <span style={{ fontSize: '11px', fontFamily: 'monospace', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1.5px' }}>
           Verifying UTech Academic Matrix...
         </span>
       </div>
@@ -81,7 +82,6 @@ export default function App() {
     return <Login onLoginSuccess={() => setAppLoading(true)} />;
   }
 
-  // ✓ DETERMINISTIC ROUTING MECHANISM: Isolates the render choices into a predictable mapping pattern
   const renderActiveTabContent = () => {
     switch (activeTab) {
       case 'rag':
@@ -99,97 +99,89 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 text-slate-900 font-sans">
-      
-      {/* 1. PERSISTENT SIDEBAR COMPONENT (20% Viewport Area) */}
-      <aside className="w-64 bg-slate-900 text-slate-100 flex flex-col justify-between border-r border-slate-800 shadow-xl shrink-0">
+    <div style={appStyles.appWrapper}>
+
+      <aside style={appStyles.sidebar}>
         <div>
-          <div className="p-6 border-b border-slate-800 flex items-center gap-3 bg-slate-950/40">
-            <div className="p-2 bg-amber-500 text-slate-950 rounded-xl shadow-lg ring-4 ring-amber-500/10">
-              <Landmark size={20} className="stroke-[2.5px]" />
+          <div style={appStyles.brandHeader}>
+            <div style={appStyles.brandIconBox}>
+              <Landmark size={18} style={{ color: '#0f172a' }} />
             </div>
             <div>
-              <h2 className="text-sm font-black tracking-wider uppercase text-white">UTech Portal</h2>
-              <span className="text-[10px] text-amber-500 font-mono font-bold tracking-widest uppercase block">
-                {profile?.role || 'STUDENT'} CORE
+              <h2 style={appStyles.brandTitle}>UTech Portal</h2>
+              <span style={appStyles.brandSubtitle}>
+                {(profile?.role || 'STUDENT').toUpperCase()} CORE
               </span>
             </div>
           </div>
 
-          <nav className="p-4 space-y-1">
+          <nav style={appStyles.navContainer}>
             <button
               onClick={() => setActiveTab('rag')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all duration-150 border uppercase tracking-wider ${
-                activeTab === 'rag'
-                  ? 'bg-amber-500 text-slate-950 border-amber-400 font-extrabold shadow-md'
-                  : 'text-slate-400 border-transparent hover:bg-slate-800/60 hover:text-white'
-              }`}
+              style={{
+                ...appStyles.navButton,
+                backgroundColor: activeTab === 'rag' ? '#eab308' : 'transparent',
+                color: activeTab === 'rag' ? '#0f172a' : '#94a3b8',
+                borderColor: activeTab === 'rag' ? '#facc15' : 'transparent',
+              }}
             >
-              <MessageSquare size={16} className="shrink-0 stroke-[2.5px]" />
-              <span>Tab 1: Assistant AI</span>
+              <MessageSquare size={14} style={{ flexShrink: 0 }} />
+              <span>Workspace AI</span>
             </button>
 
             <button
               onClick={() => setActiveTab('grades')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all duration-150 border uppercase tracking-wider ${
-                activeTab === 'grades'
-                  ? 'bg-amber-500 text-slate-950 border-amber-400 font-extrabold shadow-md'
-                  : 'text-slate-400 border-transparent hover:bg-slate-800/60 hover:text-white'
-              }`}
+              style={{
+                ...appStyles.navButton,
+                backgroundColor: activeTab === 'grades' ? '#eab308' : 'transparent',
+                color: activeTab === 'grades' ? '#0f172a' : '#94a3b8',
+                borderColor: activeTab === 'grades' ? '#facc15' : 'transparent',
+              }}
             >
-              <GraduationCap size={16} className="shrink-0 stroke-[2.5px]" />
-              <span>Tab 2: Grade Matrix</span>
+              <GraduationCap size={14} style={{ flexShrink: 0 }} />
+              <span>Grade Matrix</span>
             </button>
 
             {profile?.role !== 'professor' && (
               <button
                 onClick={() => setActiveTab('roadmap')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all duration-150 border uppercase tracking-wider ${
-                  activeTab === 'roadmap'
-                    ? 'bg-amber-500 text-slate-950 border-amber-400 font-extrabold shadow-md'
-                    : 'text-slate-400 border-transparent hover:bg-slate-800/60 hover:text-white'
-                }`}
+                style={{
+                  ...appStyles.navButton,
+                  backgroundColor: activeTab === 'roadmap' ? '#eab308' : 'transparent',
+                  color: activeTab === 'roadmap' ? '#0f172a' : '#94a3b8',
+                  borderColor: activeTab === 'roadmap' ? '#facc15' : 'transparent',
+                }}
               >
-                <Map size={16} className="shrink-0 stroke-[2.5px]" />
-                <span>Tab 3: Roadmap</span>
+                <Map size={14} style={{ flexShrink: 0 }} />
+                <span>Curriculum Roadmap</span>
               </button>
             )}
           </nav>
         </div>
 
-        <div className="p-4 border-t border-slate-800 bg-slate-950/20 space-y-3">
-          <div className="px-2 py-1.5 rounded-lg bg-slate-800/40 border border-slate-800">
-            <p className="text-xs font-bold text-slate-200 truncate">{profile?.name || 'Academic User'}</p>
-            <p className="text-[10px] font-mono text-slate-500 truncate uppercase mt-0.5 tracking-wider">
-              ID: {profile?.id_number || '----------'}
-            </p>
-          </div>
-
-          <button
-            onClick={handleSignOut}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-rose-950/30 border border-slate-700/60 hover:border-rose-900/50 rounded-xl text-xs font-bold text-slate-400 hover:text-rose-400 transition-all uppercase tracking-wider shadow-sm"
-          >
-            <LogOut size={14} className="stroke-[2.5px]" />
+        <div style={appStyles.sidebarFooter}>
+          <button onClick={handleSignOut} style={appStyles.signOutButton}>
+            <LogOut size={13} />
             <span>Sign Out Session</span>
           </button>
         </div>
       </aside>
 
-      {/* 2. FLEX RECTANGLE MAIN VIEW CANVAS CONTAINER WORKSPACE (80% Viewport Area) */}
-      <main className="flex-1 h-full flex flex-col overflow-hidden bg-slate-50">
-        <header className="h-16 border-b border-slate-200 bg-white flex items-center justify-between px-8 shadow-xs shrink-0">
-          <h1 className="text-xs font-extrabold uppercase tracking-widest text-slate-400 font-mono">
-            Active Workspace Node // <span className="text-slate-800">{activeTab}</span>
-          </h1>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[10px] font-bold text-slate-400 font-mono uppercase tracking-wider">
-              Supabase Link Stable
-            </span>
+      <main style={appStyles.mainCanvas}>
+        <header style={appStyles.canvasHeader}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Radio size={14} style={{ color: '#eab308' }} className="animate-pulse" />
+            <h1 style={appStyles.nodeTitle}>
+              Screen // <span style={{ color: '#ffffff' }}>{activeTab}</span>
+            </h1>
+          </div>
+          <div style={appStyles.linkStatusBadge}>
+            <span style={appStyles.statusDot} />
+            <span style={appStyles.statusText}>Supabase Online</span>
           </div>
         </header>
 
-        <div className="flex-1 p-8 overflow-y-auto max-w-7xl w-full mx-auto">
+        <div style={appStyles.contentWrapper}>
           {renderActiveTabContent()}
         </div>
       </main>
@@ -197,3 +189,160 @@ export default function App() {
     </div>
   );
 }
+
+const appStyles: Record<string, React.CSSProperties> = {
+  appWrapper: {
+    display: 'flex',
+    height: '100vh',
+    width: '100vw',
+    overflow: 'hidden',
+    backgroundColor: '#020617',
+    color: '#f1f5f9',
+    fontFamily: 'system-ui, -apple-system, sans-serif',
+    boxSizing: 'border-box',
+    margin: '0 0 0 -30px',
+    padding: 0,
+  },
+  sidebar: {
+    width: '240px',
+    backgroundColor: '#020617',
+    borderRight: '1px solid #1e293b',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    flexShrink: 0,
+    boxSizing: 'border-box',
+  },
+  brandHeader: {
+    padding: '20px',
+    borderBottom: '1px solid #1e293b',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+  },
+  brandIconBox: {
+    padding: '8px',
+    backgroundColor: '#eab308',
+    borderRadius: '8px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  brandTitle: {
+    fontSize: '13px',
+    fontWeight: '900',
+    letterSpacing: '0.5px',
+    textTransform: 'uppercase',
+    color: '#ffffff',
+    margin: 0,
+  },
+  brandSubtitle: {
+    fontSize: '9px',
+    fontFamily: 'monospace',
+    color: '#eab308',
+    fontWeight: 'bold',
+    letterSpacing: '1px',
+    display: 'block',
+    marginTop: '2px',
+  },
+  navContainer: {
+    padding: '16px 12px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+  },
+  navButton: {
+    width: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    padding: '10px 14px',
+    borderRadius: '8px',
+    fontSize: '11px',
+    fontWeight: '700',
+    border: '1px solid transparent',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+    cursor: 'pointer',
+    textAlign: 'left',
+    transition: 'all 0.15s ease',
+  },
+  sidebarFooter: {
+    padding: '16px',
+    borderTop: '1px solid #1e293b',
+  },
+  signOutButton: {
+    width: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    padding: '10px',
+    backgroundColor: '#0f172a',
+    border: '1px solid #1e293b',
+    borderRadius: '8px',
+    fontSize: '11px',
+    fontWeight: '700',
+    color: '#94a3b8',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+  },
+  mainCanvas: {
+    flex: 1,
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+    backgroundColor: '#0f172a',
+  },
+  canvasHeader: {
+    height: '56px',
+    borderBottom: '1px solid #1e293b',
+    backgroundColor: '#020617',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '0 24px',
+    flexShrink: 0,
+  },
+  nodeTitle: {
+    fontSize: '10px',
+    fontFamily: 'monospace',
+    fontWeight: '900',
+    letterSpacing: '1px',
+    color: '#64748b',
+    textTransform: 'uppercase',
+    margin: 0,
+  },
+  linkStatusBadge: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    backgroundColor: '#0f172a',
+    padding: '6px 12px',
+    borderRadius: '20px',
+    border: '1px solid #1e293b',
+  },
+  statusDot: {
+    width: '6px',
+    height: '6px',
+    borderRadius: '50%',
+    backgroundColor: '#10b981',
+  },
+  statusText: {
+    fontSize: '9px',
+    fontFamily: 'monospace',
+    fontWeight: 'bold',
+    color: '#94a3b8',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+  },
+  contentWrapper: {
+    flex: 1,
+    padding: '24px',
+    overflow: 'hidden',
+    boxSizing: 'border-box',
+  },
+};
