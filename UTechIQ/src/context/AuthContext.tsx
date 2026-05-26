@@ -29,7 +29,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const extractRole = (u: User | null): 'student' | 'professor' | null =>
     u?.user_metadata?.role ?? null;
 
-  // Never touches loading state — caller decides that
   const fetchUserProfile = async (u: User) => {
     try {
       const userRole = extractRole(u);
@@ -67,8 +66,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    // ── Initial load ──────────────────────────────────────────────────────
-    // Runs once on mount. Shows loading spinner, then clears it.
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
@@ -76,25 +73,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (currentUser) {
         await fetchUserProfile(currentUser);
       }
-      // Always clear loading after initial check, success or not
       setLoading(false);
     });
 
-    // ── Auth state changes AFTER initial load ─────────────────────────────
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        // These fire constantly and don't represent real auth changes
         if (event === 'INITIAL_SESSION') return;
         if (event === 'TOKEN_REFRESHED') return;
 
-        // Tab refocus fires SIGNED_IN even when already logged in.
-        // We handle this by silently refreshing profile WITHOUT touching loading.
         if (event === 'SIGNED_IN') {
           const currentUser = session?.user ?? null;
           if (currentUser) {
             setUser(currentUser);
             setBirthdate(extractBirthdate(currentUser));
-            // Silent background refresh — no spinner, no loading state
             fetchUserProfile(currentUser);
           }
           return;
@@ -119,7 +110,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await supabase.auth.signOut();
     } catch (err) {
       console.error('Error during sign out:', err);
-      // Force clean if the call itself fails
       setUser(null);
       setProfile(null);
       setRole(null);
