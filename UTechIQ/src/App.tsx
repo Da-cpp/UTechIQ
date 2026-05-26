@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
-import { supabase } from './lib/supabaseClient';
+import { useEffect } from 'react';
+import { useAuth } from './context/AuthContext';
+import { supabase } from './lib/supabaseClient'; 
 
 import Tab1_RAG from './tabs/Tab1_RAG';
 import Tab2_Grades from './tabs/Tab2_Grades';
@@ -8,66 +9,19 @@ import Tab3_Curriculum from './tabs/Tab3_Roadmap';
 import Login from './routes/Login';
 
 import { MessageSquare, GraduationCap, Map, LogOut, Loader2, Landmark, Radio } from 'lucide-react';
-
-
+import { useState } from 'react';
 
 export default function App() {
-  const [session, setSession] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
+  const { user, profile, role, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<'rag' | 'grades' | 'roadmap'>('rag');
-  const [appLoading, setAppLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) fetchUserProfile(session.user.id);
-      else setAppLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) {
-        fetchUserProfile(session.user.id);
-      } else {
-        setProfile(null);
-        setAppLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const fetchUserProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        console.warn('Profiles backend table structural scan returned empty. Activating dev fallback.');
-        setProfile({
-          id: userId,
-          name: "UTech Sandbox User",
-          role: "student",
-          id_number: "2205034"
-        });
-        return;
-      }
-      setProfile(data);
-    } catch (err) {
-      console.error('Error fetching university profile credentials:', err);
-    } finally {
-      setAppLoading(false);
+    if (role === 'professor' && activeTab === 'roadmap') {
+      setActiveTab('rag');
     }
-  };
+  }, [role, activeTab]);
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-  };
-
-  if (appLoading) {
+  if (loading) {
     return (
       <div style={{ height: '100vh', width: '100vw', backgroundColor: '#020617', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
         <Loader2 size={32} className="animate-spin" style={{ color: '#eab308' }} />
@@ -78,20 +32,35 @@ export default function App() {
     );
   }
 
-  if (!session) {
-    return <Login onLoginSuccess={() => setAppLoading(true)} />;
+  if (!user) {
+    return <Login onLoginSuccess={() => {}} />;
   }
+
+  const displayName = profile
+    ? `${(profile as any).first_name} ${(profile as any).last_name}`
+    : 'Loading...';
+
+  const displayId = profile
+    ? ((profile as any).student_id ?? (profile as any).professor_id ?? '-------')
+    : '-------';
+
+  const handleForceSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      window.location.reload(); 
+    } catch (err) {
+      console.error('Session clearance exception:', err);
+    }
+  };
 
   const renderActiveTabContent = () => {
     switch (activeTab) {
       case 'rag':
         return <Tab1_RAG profile={profile} />;
       case 'grades':
-        return <Tab2_Grades profile={profile} />;
+        return <Tab2_Grades profile={profile} role={role ?? 'student'} />;
       case 'roadmap':
-        if (profile?.role === 'professor') {
-          return <Tab1_RAG profile={profile} />;
-        }
+        if (role === 'professor') return <Tab1_RAG profile={profile} />;
         return <Tab3_Curriculum />;
       default:
         return <Tab1_RAG profile={profile} />;
@@ -110,13 +79,14 @@ export default function App() {
             <div>
               <h2 style={appStyles.brandTitle}>UTech Portal</h2>
               <span style={appStyles.brandSubtitle}>
-                {(profile?.role || 'STUDENT').toUpperCase()} CORE
+                {(role || 'STUDENT').toUpperCase()} CORE
               </span>
             </div>
           </div>
 
           <nav style={appStyles.navContainer}>
             <button
+              type="button"
               onClick={() => setActiveTab('rag')}
               style={{
                 ...appStyles.navButton,
@@ -130,6 +100,7 @@ export default function App() {
             </button>
 
             <button
+              type="button"
               onClick={() => setActiveTab('grades')}
               style={{
                 ...appStyles.navButton,
@@ -142,8 +113,9 @@ export default function App() {
               <span>Grade Matrix</span>
             </button>
 
-            {profile?.role !== 'professor' && (
+            {role !== 'professor' && (
               <button
+                type="button"
                 onClick={() => setActiveTab('roadmap')}
                 style={{
                   ...appStyles.navButton,
@@ -160,7 +132,34 @@ export default function App() {
         </div>
 
         <div style={appStyles.sidebarFooter}>
-          <button onClick={handleSignOut} style={appStyles.signOutButton}>
+          <div style={{ marginBottom: '10px', padding: '10px 12px', backgroundColor: '#0f172a', borderRadius: '8px', border: '1px solid #1e293b' }}>
+            {profile ? (
+              <>
+                <p style={{ fontSize: '11px', fontWeight: '700', color: '#ffffff', margin: 0, marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {displayName}
+                </p>
+                <p style={{ fontSize: '9px', fontFamily: 'monospace', color: '#94a3b8', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  ID: {displayId} • {role}
+                </p>
+              </>
+            ) : (
+              <div>
+                <p style={{ fontSize: '10px', color: '#fca5a5', margin: '0 0 4px 0', fontFamily: 'monospace' }}>⚠️ SESSION DESYNCED</p>
+                <button 
+                  type="button"
+                  onClick={() => {
+                    localStorage.clear();
+                    window.location.reload();
+                  }}
+                  style={{ background: '#f43f5e', color: '#fff', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '9px', fontWeight: 'bold', cursor: 'pointer' }}
+                >
+                  FORCE CLEAR STORAGE
+                </button>
+              </div>
+            )}
+          </div>
+
+          <button type="button" onClick={handleForceSignOut} style={appStyles.signOutButton}>
             <LogOut size={13} />
             <span>Sign Out Session</span>
           </button>
@@ -200,7 +199,9 @@ const appStyles: Record<string, React.CSSProperties> = {
     color: '#f1f5f9',
     fontFamily: 'system-ui, -apple-system, sans-serif',
     boxSizing: 'border-box',
-    margin: '0 0 0 -30px',
+    position: 'relative',
+    left: '-30px', 
+    margin: 0,
     padding: 0,
   },
   sidebar: {

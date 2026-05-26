@@ -1,162 +1,310 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { MessageSquare, BarChart3, Compass, LogOut, ShieldAlert, UserCheck } from 'lucide-react';
-
-// Using strict type-only imports to satisfy verbatimModuleSyntax
+import { MessageSquare, GraduationCap, Map, LogOut, Landmark, Radio } from 'lucide-react';
 import type { UserRole } from '../types/database';
+import type { StudentProfile, ProfessorProfile } from '../types/database';
+
+import Tab1_RAG from '../tabs/Tab1_RAG';
+import Tab2_Grades from '../tabs/Tab2_Grades';
+import Tab3_Curriculum from '../tabs/Tab3_Roadmap';
 
 type TabID = 'rag' | 'grades' | 'roadmap';
 
 interface SidebarNavItem {
   id: TabID;
   label: string;
-  icon: React.ComponentType<{ size: number; className?: string }>;
+  icon: React.ComponentType<{ size: number; style?: React.CSSProperties }>;
   allowedRoles: UserRole[];
 }
 
 export default function Dashboard() {
-  const { profile, signOut } = useAuth();
+  const { profile, role, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<TabID>('rag');
 
-  // Unified Tab Configuration Array
   const navItems: SidebarNavItem[] = [
-    { 
-      id: 'rag', 
-      label: 'AI Knowledge RAG', 
-      icon: MessageSquare, 
-      allowedRoles: ['student', 'professor'] 
-    },
-    { 
-      id: 'grades', 
-      label: 'Academic Standings', 
-      icon: BarChart3, 
-      allowedRoles: ['student', 'professor'] 
-    },
-    { 
-      id: 'roadmap', 
-      label: 'Curriculum Roadmap', 
-      icon: Compass, 
-      allowedRoles: ['student'] // Strict Role Restriction Enforcement
-    },
+    { id: 'rag',     label: 'Workspace AI',      icon: MessageSquare,  allowedRoles: ['student', 'professor'] },
+    { id: 'grades',  label: 'Grade Matrix',       icon: GraduationCap,  allowedRoles: ['student', 'professor'] },
+    { id: 'roadmap', label: 'Curriculum Roadmap', icon: Map,            allowedRoles: ['student'] },
   ];
 
-  // Filter navigation items dynamically based on user profile role
-  const userRole: UserRole = profile?.role ?? 'student';
+  const userRole: UserRole = role ?? 'student';
   const visibleNavItems = navItems.filter(item => item.allowedRoles.includes(userRole));
 
-  // Safety Fallback Guard: If a professor manually tries to sit on a restricted tab, force them off
   React.useEffect(() => {
     if (userRole === 'professor' && activeTab === 'roadmap') {
       setActiveTab('rag');
     }
   }, [userRole, activeTab]);
 
+  const displayName = profile
+    ? `${(profile as StudentProfile | ProfessorProfile).first_name} ${(profile as StudentProfile | ProfessorProfile).last_name}`
+    : 'Loading...';
+
+  const displayId = profile
+    ? ((profile as StudentProfile).student_id ?? (profile as ProfessorProfile).professor_id ?? '-------')
+    : '-------';
+
+  const renderTab = () => {
+    switch (activeTab) {
+      case 'rag':     return <Tab1_RAG profile={profile} />;
+      case 'grades':  return <Tab2_Grades profile={profile} role={userRole} />;
+      case 'roadmap': return userRole === 'student' ? <Tab3_Curriculum /> : <Tab1_RAG profile={profile} />;
+      default:        return <Tab1_RAG profile={profile} />;
+    }
+  };
+
   return (
-    <div className="min-h-screen flex bg-slate-50 text-slate-800 antialiased">
-      
-      {/* 1. PERSISTENT SIDEBAR NAVIGATION (20% Viewport Width) */}
-      <aside className="w-1/5 min-w-[240px] bg-slate-900 text-slate-200 flex flex-col border-r border-slate-800">
-        
-        {/* Branding Identity Block */}
-        <div className="p-6 border-b border-slate-800 flex items-center gap-3">
-          <div className="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center text-slate-950 font-bold">
-            U
+    <div style={styles.appWrapper}>
+
+      <aside style={styles.sidebar}>
+        <div>
+          <div style={styles.brandHeader}>
+            <div style={styles.brandIconBox}>
+              <Landmark size={18} style={{ color: '#0f172a' }} />
+            </div>
+            <div>
+              <h2 style={styles.brandTitle}>UTech Portal</h2>
+              <span style={styles.brandSubtitle}>{userRole.toUpperCase()} CORE</span>
+            </div>
           </div>
-          <div>
-            <h2 className="font-bold tracking-tight text-white text-base">UTech Portal</h2>
-            <span className="text-xs text-slate-400 block uppercase font-semibold tracking-wider">Workspace Shell</span>
-          </div>
+
+          <nav style={styles.navContainer}>
+            {visibleNavItems.map((item) => {
+              const IconComponent = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setActiveTab(item.id)}
+                  style={{
+                    ...styles.navButton,
+                    backgroundColor: isActive ? '#eab308' : 'transparent',
+                    color:           isActive ? '#0f172a' : '#94a3b8',
+                    borderColor:     isActive ? '#facc15' : 'transparent',
+                  }}
+                >
+                  <IconComponent size={14} style={{ flexShrink: 0 } as React.CSSProperties} />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
         </div>
 
-        {/* Dynamic Nav Item List */}
-        <nav className="flex-1 p-4 space-y-1">
-          {visibleNavItems.map((item) => {
-            const IconComponent = item.icon;
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                  isActive
-                    ? 'bg-amber-500 text-slate-950 font-semibold shadow-md shadow-amber-500/10'
-                    : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'
-                }`}
-              >
-                <IconComponent size={18} className={isActive ? 'text-slate-950' : 'text-slate-400'} />
-                <span>{item.label}</span>
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* Active User Footer Status Badge */}
-        <div className="p-4 border-t border-slate-800 space-y-3 bg-slate-950/40">
-          <div className="flex items-start gap-2.5">
-            <div className="p-1.5 bg-slate-800 rounded-md text-slate-400 mt-0.5">
-              {userRole === 'professor' ? <ShieldAlert size={16} className="text-amber-400" /> : <UserCheck size={16} />}
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-bold text-white truncate">{profile?.name ?? 'Loading profile...'}</p>
-              <p className="text-[10px] text-slate-400 truncate tracking-wide uppercase font-mono mt-0.5">
-                ID: {profile?.id_number ?? '-------'} • {userRole}
-              </p>
-            </div>
+        <div style={styles.sidebarFooter}>
+          <div style={styles.userInfoBlock}>
+            <p style={styles.userInfoName}>{displayName}</p>
+            <p style={styles.userInfoMeta}>ID: {displayId} • {userRole}</p>
           </div>
-
-          <button
-            type="button"
-            onClick={signOut}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 border border-slate-800 rounded-lg text-xs font-semibold text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/20 transition-all"
-          >
-            <LogOut size={14} />
-            <span>Terminate Session</span>
+          <button onClick={signOut} style={styles.signOutButton}>
+            <LogOut size={13} />
+            <span>Sign Out Session</span>
           </button>
         </div>
       </aside>
 
-      {/* 2. DYNAMIC WORKSPACE COMPONENT PANEL (80% Viewport Width) */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        
-        {/* Global Dashboard Navigation Top Bar */}
-        <header className="h-16 bg-white border-b border-slate-200 px-8 flex items-center justify-between shadow-sm shrink-0">
-          <div className="flex items-center gap-2 text-sm text-slate-500">
-            <span className="font-medium text-slate-400 uppercase tracking-wider text-xs">Active Segment</span>
-            <span className="text-slate-300">/</span>
-            <span className="capitalize text-slate-800 font-semibold text-sm">
-              {navItems.find(n => n.id === activeTab)?.label}
-            </span>
+      <main style={styles.mainCanvas}>
+        <header style={styles.canvasHeader}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Radio size={14} style={{ color: '#eab308' }} className="animate-pulse" />
+            <h1 style={styles.nodeTitle}>
+              Screen // <span style={{ color: '#ffffff' }}>{activeTab}</span>
+            </h1>
           </div>
-          <div className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-bold font-mono uppercase tracking-wider">
-            UTech-v1.0.0
+          <div style={styles.linkStatusBadge}>
+            <span style={styles.statusDot} />
+            <span style={styles.statusText}>Supabase Online</span>
           </div>
         </header>
 
-        {/* Main Interface Tab Rendering Body */}
-        <div className="flex-1 p-8">
-          {activeTab === 'rag' && (
-            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-              <h3 className="text-lg font-bold text-slate-900 mb-2">Tab 1: AI Knowledge RAG</h3>
-              <p className="text-sm text-slate-500">Document indexer vector and institutional RAG stream workspace context template.</p>
-            </div>
-          )}
-
-          {activeTab === 'grades' && (
-            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-              <h3 className="text-lg font-bold text-slate-900 mb-2">Tab 2: Academic Standings Matrix</h3>
-              <p className="text-sm text-slate-500">Relational module performance reporting grid and warning indicators framework.</p>
-            </div>
-          )}
-
-          {activeTab === 'roadmap' && userRole === 'student' && (
-            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-              <h3 className="text-lg font-bold text-slate-900 mb-2">Tab 3: Curriculum Roadmap</h3>
-              <p className="text-sm text-slate-500">Degree configuration checklist tracking completed vs upcoming program tracks.</p>
-            </div>
-          )}
+        <div style={styles.contentWrapper}>
+          {renderTab()}
         </div>
       </main>
+
     </div>
   );
 }
+
+const styles: Record<string, React.CSSProperties> = {
+  appWrapper: {
+    display: 'flex',
+    height: '100vh',
+    width: '100vw',
+    overflow: 'hidden',
+    backgroundColor: '#020617',
+    color: '#f1f5f9',
+    fontFamily: 'system-ui, -apple-system, sans-serif',
+    boxSizing: 'border-box',
+    margin: '0 0 0 -30px',
+    padding: 0,
+  },
+  sidebar: {
+    width: '240px',
+    backgroundColor: '#020617',
+    borderRight: '1px solid #1e293b',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    flexShrink: 0,
+    boxSizing: 'border-box',
+  },
+  brandHeader: {
+    padding: '20px',
+    borderBottom: '1px solid #1e293b',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+  },
+  brandIconBox: {
+    padding: '8px',
+    backgroundColor: '#eab308',
+    borderRadius: '8px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  brandTitle: {
+    fontSize: '13px',
+    fontWeight: '900',
+    letterSpacing: '0.5px',
+    textTransform: 'uppercase',
+    color: '#ffffff',
+    margin: 0,
+  },
+  brandSubtitle: {
+    fontSize: '9px',
+    fontFamily: 'monospace',
+    color: '#eab308',
+    fontWeight: 'bold',
+    letterSpacing: '1px',
+    display: 'block',
+    marginTop: '2px',
+  },
+  navContainer: {
+    padding: '16px 12px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+  },
+  navButton: {
+    width: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    padding: '10px 14px',
+    borderRadius: '8px',
+    fontSize: '11px',
+    fontWeight: '700',
+    border: '1px solid transparent',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+    cursor: 'pointer',
+    textAlign: 'left',
+    transition: 'all 0.15s ease',
+  },
+  sidebarFooter: {
+    padding: '16px',
+    borderTop: '1px solid #1e293b',
+  },
+  userInfoBlock: {
+    marginBottom: '10px',
+    padding: '10px 12px',
+    backgroundColor: '#0f172a',
+    borderRadius: '8px',
+    border: '1px solid #1e293b',
+  },
+  userInfoName: {
+    fontSize: '11px',
+    fontWeight: '700',
+    color: '#ffffff',
+    margin: 0,
+    marginBottom: '2px',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  userInfoMeta: {
+    fontSize: '9px',
+    fontFamily: 'monospace',
+    color: '#94a3b8',
+    margin: 0,
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+  },
+  signOutButton: {
+    width: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    padding: '10px',
+    backgroundColor: '#0f172a',
+    border: '1px solid #1e293b',
+    borderRadius: '8px',
+    fontSize: '11px',
+    fontWeight: '700',
+    color: '#94a3b8',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+  },
+  mainCanvas: {
+    flex: 1,
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+    backgroundColor: '#0f172a',
+  },
+  canvasHeader: {
+    height: '56px',
+    borderBottom: '1px solid #1e293b',
+    backgroundColor: '#020617',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '0 24px',
+    flexShrink: 0,
+  },
+  nodeTitle: {
+    fontSize: '10px',
+    fontFamily: 'monospace',
+    fontWeight: '900',
+    letterSpacing: '1px',
+    color: '#64748b',
+    textTransform: 'uppercase',
+    margin: 0,
+  },
+  linkStatusBadge: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    backgroundColor: '#0f172a',
+    padding: '6px 12px',
+    borderRadius: '20px',
+    border: '1px solid #1e293b',
+  },
+  statusDot: {
+    width: '6px',
+    height: '6px',
+    borderRadius: '50%',
+    backgroundColor: '#10b981',
+  },
+  statusText: {
+    fontSize: '9px',
+    fontFamily: 'monospace',
+    fontWeight: 'bold',
+    color: '#94a3b8',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+  },
+  contentWrapper: {
+    flex: 1,
+    padding: '24px',
+    overflow: 'hidden',
+    boxSizing: 'border-box',
+  },
+};

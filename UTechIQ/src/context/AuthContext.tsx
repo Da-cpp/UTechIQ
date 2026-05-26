@@ -17,11 +17,11 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser]       = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [role, setRole]       = useState<'student' | 'professor' | null>(null);
+  const [user, setUser]           = useState<User | null>(null);
+  const [profile, setProfile]     = useState<Profile | null>(null);
+  const [role, setRole]           = useState<'student' | 'professor' | null>(null);
   const [birthdate, setBirthdate] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading]     = useState(true);
 
   const extractBirthdate = (u: User | null): string | null =>
     u?.user_metadata?.birthdate ?? null;
@@ -29,12 +29,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const extractRole = (u: User | null): 'student' | 'professor' | null =>
     u?.user_metadata?.role ?? null;
 
-  /**
-   * Fetches the role-specific profile row for the authenticated user.
-   * Branches on the role stored in auth metadata, then queries either
-   * `students` or `professors` by matching on `user_id`.
-   */
-  const fetchUserProfile = async (u: User) => {
+  const fetchUserProfile = async (u: User, showLoader = false) => {
+    if (showLoader) setLoading(true);
+
+    const timeout = setTimeout(() => {
+      console.warn('AuthContext: profile fetch timed out');
+      setLoading(false);
+    }, 2000);
+
     try {
       const userRole = extractRole(u);
 
@@ -44,7 +46,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .select('*')
           .eq('user_id', u.id)
           .single();
-
         if (error) throw error;
         setProfile(data as StudentProfile);
         setRole('student');
@@ -55,13 +56,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .select('*')
           .eq('user_id', u.id)
           .single();
-
         if (error) throw error;
         setProfile(data as ProfessorProfile);
         setRole('professor');
 
       } else {
-        // Role not set in metadata — shouldn't happen after signup, but handle gracefully
         console.warn('AuthContext: user has no role in metadata', u.id);
         setProfile(null);
         setRole(null);
@@ -71,6 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setProfile(null);
       setRole(null);
     } finally {
+      clearTimeout(timeout);
       setLoading(false);
     }
   };
@@ -80,27 +80,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       setBirthdate(extractBirthdate(currentUser));
-
       if (currentUser) {
-        fetchUserProfile(currentUser);
+        fetchUserProfile(currentUser, true);
       } else {
         setLoading(false);
       }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
+        if (event === 'INITIAL_SESSION') return;
+        if (event === 'TOKEN_REFRESHED') return;
+
         const currentUser = session?.user ?? null;
         setUser(currentUser);
         setBirthdate(extractBirthdate(currentUser));
 
-        if (currentUser) {
-          setLoading(true);
-          await fetchUserProfile(currentUser);
-        } else {
+        if (event === 'SIGNED_OUT') {
           setProfile(null);
           setRole(null);
+          setUser(null);
+          setBirthdate(null);
           setLoading(false);
+          return;
+        }
+
+        if (currentUser) {
+          const isNewSignIn = event === 'SIGNED_IN';
+          await fetchUserProfile(currentUser, isNewSignIn);
         }
       }
     );
@@ -110,11 +117,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      setLoading(true);
       await supabase.auth.signOut();
     } catch (err) {
       console.error('Error during sign out:', err);
-    } finally {
       setUser(null);
       setProfile(null);
       setRole(null);
