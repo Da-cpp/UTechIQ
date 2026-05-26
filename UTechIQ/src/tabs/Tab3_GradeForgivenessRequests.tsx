@@ -18,6 +18,7 @@ interface EligibleGrade {
   attempt_type: string;
   credits: number;
   professor_assignment_id: string;
+  created_at: string;
 }
 
 interface ForgivenessRequest {
@@ -147,7 +148,6 @@ function SignatureCanvas({ onSave }: { onSave: (dataUrl: string) => void }) {
 
 
 function StudentView({ profile }: { profile: StudentProfile }) {
-  const { user } = useAuth();
   const [eligible, setEligible]       = useState<EligibleGrade[]>([]);
   const [requests, setRequests]       = useState<ForgivenessRequest[]>([]);
   const [loading, setLoading]         = useState(true);
@@ -376,7 +376,6 @@ function StudentView({ profile }: { profile: StudentProfile }) {
 
 
 function ProfessorView({ profile }: { profile: ProfessorProfile }) {
-  const { user } = useAuth();
   const [requests, setRequests]     = useState<ProfessorRequest[]>([]);
   const [loading, setLoading]       = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
