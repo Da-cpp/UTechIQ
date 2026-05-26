@@ -21,7 +21,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile]     = useState<Profile | null>(null);
   const [role, setRole]           = useState<'student' | 'professor' | null>(null);
   const [birthdate, setBirthdate] = useState<string | null>(null);
-  const [loading, setLoading]     = useState(true);
+  const [loading, setLoading]     = useState(true); // only true on first mount
 
   const extractBirthdate = (u: User | null): string | null =>
     u?.user_metadata?.birthdate ?? null;
@@ -29,14 +29,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const extractRole = (u: User | null): 'student' | 'professor' | null =>
     u?.user_metadata?.role ?? null;
 
-  const fetchUserProfile = async (u: User, showLoader = false) => {
-    if (showLoader) setLoading(true);
-
-    const timeout = setTimeout(() => {
-      console.warn('AuthContext: profile fetch timed out');
-      setLoading(false);
-    }, 2000);
-
+  // Never touches loading state — caller decides that
+  const fetchUserProfile = async (u: User) => {
     try {
       const userRole = extractRole(u);
 
@@ -69,45 +63,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Error fetching user profile:', err);
       setProfile(null);
       setRole(null);
-    } finally {
-      clearTimeout(timeout);
-      setLoading(false);
     }
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // ── Initial load ──────────────────────────────────────────────────────
+    // Runs once on mount. Shows loading spinner, then clears it.
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       setBirthdate(extractBirthdate(currentUser));
       if (currentUser) {
-        fetchUserProfile(currentUser, true);
-      } else {
-        setLoading(false);
+        await fetchUserProfile(currentUser);
       }
+      // Always clear loading after initial check, success or not
+      setLoading(false);
     });
 
+    // ── Auth state changes AFTER initial load ─────────────────────────────
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        // These fire constantly and don't represent real auth changes
         if (event === 'INITIAL_SESSION') return;
         if (event === 'TOKEN_REFRESHED') return;
 
-        const currentUser = session?.user ?? null;
-        setUser(currentUser);
-        setBirthdate(extractBirthdate(currentUser));
-
-        if (event === 'SIGNED_OUT') {
-          setProfile(null);
-          setRole(null);
-          setUser(null);
-          setBirthdate(null);
-          setLoading(false);
+        // Tab refocus fires SIGNED_IN even when already logged in.
+        // We handle this by silently refreshing profile WITHOUT touching loading.
+        if (event === 'SIGNED_IN') {
+          const currentUser = session?.user ?? null;
+          if (currentUser) {
+            setUser(currentUser);
+            setBirthdate(extractBirthdate(currentUser));
+            // Silent background refresh — no spinner, no loading state
+            fetchUserProfile(currentUser);
+          }
           return;
         }
 
-        if (currentUser) {
-          const isNewSignIn = event === 'SIGNED_IN';
-          await fetchUserProfile(currentUser, isNewSignIn);
+        if (event === 'SIGNED_OUT') {
+          setUser(null);
+          setProfile(null);
+          setRole(null);
+          setBirthdate(null);
+          setLoading(false);
+          return;
         }
       }
     );
@@ -120,6 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await supabase.auth.signOut();
     } catch (err) {
       console.error('Error during sign out:', err);
+      // Force clean if the call itself fails
       setUser(null);
       setProfile(null);
       setRole(null);

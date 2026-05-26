@@ -1,25 +1,69 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from './context/AuthContext';
-import { supabase } from './lib/supabaseClient'; 
+import { supabase } from './lib/supabaseClient';
 
 import Tab1_RAG from './tabs/Tab1_RAG';
 import Tab2_Grades from './tabs/Tab2_Grades';
 import Tab3_Curriculum from './tabs/Tab3_Roadmap';
+import Tab3_GradeForgivenessRequests from './tabs/Tab3_GradeForgivenessRequests';
 
 import Login from './routes/Login';
 
-import { MessageSquare, GraduationCap, Map, LogOut, Loader2, Landmark, Radio } from 'lucide-react';
-import { useState } from 'react';
+import { MessageSquare, GraduationCap, Map, LogOut, Loader2, Landmark, Radio, PenLine } from 'lucide-react';
+
+type TabID = 'rag' | 'grades' | 'roadmap' | 'forgiveness';
 
 export default function App() {
   const { user, profile, role, loading } = useAuth();
-  const [activeTab, setActiveTab] = useState<'rag' | 'grades' | 'roadmap'>('rag');
+  const [activeTab, setActiveTab]       = useState<TabID>('rag');
+  const [unreadCount, setUnreadCount]   = useState(0);
 
+  // Kick professor off student-only tabs
   useEffect(() => {
     if (role === 'professor' && activeTab === 'roadmap') {
       setActiveTab('rag');
     }
   }, [role, activeTab]);
+
+  // Fetch unread notification count
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchUnread = async () => {
+      const { count } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('is_read', false);
+      setUnreadCount(count ?? 0);
+    };
+
+    fetchUnread();
+
+    // Subscribe to new notifications in real time
+    const channel = supabase
+      .channel('notifications_badge')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
+        () => fetchUnread()
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
+
+  // Mark notifications as read when forgiveness tab is opened
+  useEffect(() => {
+    if (activeTab === 'forgiveness' && user && unreadCount > 0) {
+      supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('user_id', user.id)
+        .eq('is_read', false)
+        .then(() => setUnreadCount(0));
+    }
+  }, [activeTab, user, unreadCount]);
 
   if (loading) {
     return (
@@ -47,7 +91,7 @@ export default function App() {
   const handleForceSignOut = async () => {
     try {
       await supabase.auth.signOut();
-      window.location.reload(); 
+      window.location.reload();
     } catch (err) {
       console.error('Session clearance exception:', err);
     }
@@ -55,15 +99,13 @@ export default function App() {
 
   const renderActiveTabContent = () => {
     switch (activeTab) {
-      case 'rag':
-        return <Tab1_RAG profile={profile} />;
-      case 'grades':
-        return <Tab2_Grades profile={profile} role={role ?? 'student'} />;
+      case 'rag':         return <Tab1_RAG profile={profile} />;
+      case 'grades':      return <Tab2_Grades profile={profile} role={role ?? 'student'} />;
+      case 'forgiveness': return <Tab3_GradeForgivenessRequests profile={profile} />;
       case 'roadmap':
         if (role === 'professor') return <Tab1_RAG profile={profile} />;
         return <Tab3_Curriculum />;
-      default:
-        return <Tab1_RAG profile={profile} />;
+      default:            return <Tab1_RAG profile={profile} />;
     }
   };
 
@@ -91,8 +133,8 @@ export default function App() {
               style={{
                 ...appStyles.navButton,
                 backgroundColor: activeTab === 'rag' ? '#eab308' : 'transparent',
-                color: activeTab === 'rag' ? '#0f172a' : '#94a3b8',
-                borderColor: activeTab === 'rag' ? '#facc15' : 'transparent',
+                color:           activeTab === 'rag' ? '#0f172a' : '#94a3b8',
+                borderColor:     activeTab === 'rag' ? '#facc15' : 'transparent',
               }}
             >
               <MessageSquare size={14} style={{ flexShrink: 0 }} />
@@ -105,8 +147,8 @@ export default function App() {
               style={{
                 ...appStyles.navButton,
                 backgroundColor: activeTab === 'grades' ? '#eab308' : 'transparent',
-                color: activeTab === 'grades' ? '#0f172a' : '#94a3b8',
-                borderColor: activeTab === 'grades' ? '#facc15' : 'transparent',
+                color:           activeTab === 'grades' ? '#0f172a' : '#94a3b8',
+                borderColor:     activeTab === 'grades' ? '#facc15' : 'transparent',
               }}
             >
               <GraduationCap size={14} style={{ flexShrink: 0 }} />
@@ -120,14 +162,49 @@ export default function App() {
                 style={{
                   ...appStyles.navButton,
                   backgroundColor: activeTab === 'roadmap' ? '#eab308' : 'transparent',
-                  color: activeTab === 'roadmap' ? '#0f172a' : '#94a3b8',
-                  borderColor: activeTab === 'roadmap' ? '#facc15' : 'transparent',
+                  color:           activeTab === 'roadmap' ? '#0f172a' : '#94a3b8',
+                  borderColor:     activeTab === 'roadmap' ? '#facc15' : 'transparent',
                 }}
               >
                 <Map size={14} style={{ flexShrink: 0 }} />
                 <span>Curriculum Roadmap</span>
               </button>
             )}
+
+            {/* Forgiveness tab — both roles, with unread badge */}
+            <button
+              type="button"
+              onClick={() => setActiveTab('forgiveness')}
+              style={{
+                ...appStyles.navButton,
+                backgroundColor: activeTab === 'forgiveness' ? '#eab308' : 'transparent',
+                color:           activeTab === 'forgiveness' ? '#0f172a' : '#94a3b8',
+                borderColor:     activeTab === 'forgiveness' ? '#facc15' : 'transparent',
+                position: 'relative',
+              }}
+            >
+              <PenLine size={14} style={{ flexShrink: 0 }} />
+              <span>Grade Forgiveness</span>
+              {unreadCount > 0 && activeTab !== 'forgiveness' && (
+                <span style={{
+                  marginLeft: 'auto',
+                  minWidth: '18px',
+                  height: '18px',
+                  padding: '0 5px',
+                  backgroundColor: '#ef4444',
+                  color: '#fff',
+                  borderRadius: '10px',
+                  fontSize: '9px',
+                  fontWeight: '800',
+                  fontFamily: 'monospace',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </button>
           </nav>
         </div>
 
@@ -145,12 +222,9 @@ export default function App() {
             ) : (
               <div>
                 <p style={{ fontSize: '10px', color: '#fca5a5', margin: '0 0 4px 0', fontFamily: 'monospace' }}>⚠️ SESSION DESYNCED</p>
-                <button 
+                <button
                   type="button"
-                  onClick={() => {
-                    localStorage.clear();
-                    window.location.reload();
-                  }}
+                  onClick={() => { localStorage.clear(); window.location.reload(); }}
                   style={{ background: '#f43f5e', color: '#fff', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '9px', fontWeight: 'bold', cursor: 'pointer' }}
                 >
                   FORCE CLEAR STORAGE
@@ -200,7 +274,7 @@ const appStyles: Record<string, React.CSSProperties> = {
     fontFamily: 'system-ui, -apple-system, sans-serif',
     boxSizing: 'border-box',
     position: 'relative',
-    left: '-30px', 
+    left: '-30px',
     margin: 0,
     padding: 0,
   },
