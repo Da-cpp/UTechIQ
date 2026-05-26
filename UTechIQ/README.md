@@ -1,75 +1,70 @@
-# React + TypeScript + Vite
+# UTechIQ
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+UTechIQ is an academic support system designed for students to check grades, interact with an AI academic advisor, and access university-related tools.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🚀 How to Run the Project
 
-## React Compiler
+### 1. Download the project
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+Clone the repository:
 
-Note: This will impact Vite dev & build performances.
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+git clone https://github.com/your-username/UTechIQ.git
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Or download it as a ZIP and extract it.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+---
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 2. Navigate into the project folder
+
+```bash
+cd UTechIQ
 ```
+
+---
+
+### 3. Install dependencies
+
+```bash
+npm install
+```
+
+---
+
+### 4. Start the development server
+
+```bash
+npm run dev
+```
+
+---
+
+## 🛠 Tech Stack
+
+- React / Vite (or Next.js if you're using it)
+- TypeScript
+- Supabase (database + auth + storage)
+- AI Integration (Anthropic API)
+
+---
+
+## 📌 Features
+
+- AI Academic Advisor Chatbot
+- Grade Viewer (GPA, credits, failed modules)
+- Grade Forgiveness System
+- Student Academic Tools
+- Professor Document Upload System
+
+---
+
+## ⚠️ Notes
+
+Make sure you have:
+- Node.js installed
+- Environment variables set up (Supabase keys)
+
+---
